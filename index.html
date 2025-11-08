@@ -11,10 +11,10 @@
             font-family: 'Inter', 'Microsoft YaHei', 'SimHei', sans-serif;
             transition: background-color 0.3s;
         }
-        /* 自定义圆形按钮样式 */
+        /* 自定义圆形按钮样式 - 尺寸已缩短 */
         .listen-button {
-            width: 200px; /* 足够大的圆形直径 */
-            height: 200px;
+            width: 150px; /* 足够大的圆形直径 */
+            height: 150px;
             box-shadow: 0 10px 15px -3px rgba(252, 79, 79, 0.5), 0 4px 6px -2px rgba(252, 79, 79, 0.4);
             transition: transform 0.1s ease, box-shadow 0.1s ease;
         }
@@ -43,22 +43,22 @@
 
         <!-- 顶部标题 --><h1 class="text-4xl font-bold text-gray-700 mb-8 mt-4">乐学英语</h1>
 
-        <!-- 英文单词显示区 (浅蓝色框) --><div id="english-word-box" class="w-full bg-blue-500 rounded-2xl p-6 mb-6 shadow-xl flex items-center justify-center" style="min-height: 200px;">
+        <!-- 英文单词显示区 (浅蓝色框) - 高度已缩短 --><div id="english-word-box" class="w-full bg-blue-500 rounded-2xl p-6 mb-6 shadow-xl flex items-center justify-center" style="min-height: 150px;">
             <p id="english-word" class="text-white text-6xl font-extrabold text-center select-none">Welcome</p>
         </div>
 
-        <!-- 中文翻译显示区 --><div class="w-full p-4 mb-10">
-            <p id="chinese-translation" class="text-gray-800 text-5xl font-semibold text-center select-none">欢迎</p>
+        <!-- 中文翻译显示区 - 字体和边距已缩短 --><div class="w-full p-4 mb-8">
+            <p id="chinese-translation" class="text-gray-800 text-4xl font-semibold text-center select-none">欢迎</p>
         </div>
 
-        <!-- “听” 按钮 (圆形红底) --><button id="listen-btn" class="listen-button bg-red-500 hover:bg-red-600 text-white rounded-full flex flex-col items-center justify-center cursor-pointer mb-12">
-            <!-- 喇叭Icon (Inline SVG) - 新图标 --><svg class="w-16 h-16 mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <!-- “听” 按钮 (圆形红底) - 尺寸和边距已缩短 --><button id="listen-btn" class="listen-button bg-red-500 hover:bg-red-600 text-white rounded-full flex flex-col items-center justify-center cursor-pointer mb-8">
+            <!-- 喇叭Icon (Inline SVG) - 尺寸已缩短 --><svg class="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 10v4c0 .55.45 1 1 1h3l4 4V6l-4 4H4c-.55 0-1 .45-1 1zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.98 7-4.66 7-8.77s-2.99-7.79-7-8.77z"/>
             </svg>
-            <span class="text-4xl font-bold">听</span>
+            <span class="text-3xl font-bold">听</span>
         </button>
 
-        <!-- “下一个” 按钮 (绿色长方形) --><button id="next-btn" class="next-button bg-green-400 hover:bg-green-500 text-white font-bold py-5 px-16 rounded-xl text-4xl w-full max-w-sm cursor-pointer">
+        <!-- “下一个” 按钮 (绿色长方形) - 内边距已缩短 --><button id="next-btn" class="next-button bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-16 rounded-xl text-4xl w-full max-w-sm cursor-pointer">
             下一个
         </button>
 
