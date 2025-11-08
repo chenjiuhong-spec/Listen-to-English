@@ -67,24 +67,40 @@
 
     <script type="module">
         // ----------------------------------------------------------------------
-        // 1. Firebase 初始化 (根据要求必须包含，但此处不用于数据存储)
+        // 1. Firebase 初始化 - 已修改以处理配置缺失的错误
         // ----------------------------------------------------------------------
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 全局变量定义（确保在Canvas环境中可用）
+        // 全局变量定义
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // 延迟初始化 app, db, auth
+        let app = null;
+        let db = null;
+        let auth = null;
 
-        // 异步认证函数
+        /**
+         * 异步初始化 Firebase 和认证，并捕获初始化错误。
+         * 如果配置不完整，则跳过初始化，允许主应用运行。
+         */
         async function authenticate() {
             try {
+                // 检查 firebaseConfig 是否包含 projectId，这是导致错误的直接原因
+                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
+                    console.warn("Firebase配置不完整（缺少 projectId）。已跳过数据库初始化，但游戏核心功能不受影响。");
+                    return; 
+                }
+                
+                // 尝试初始化 Firebase 服务
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // 认证逻辑
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
@@ -92,14 +108,15 @@
                 }
                 // console.log("Firebase authentication successful.");
             } catch (error) {
-                console.error("Firebase authentication failed:", error);
+                // 捕获任何初始化或认证失败的错误，并防止应用崩溃
+                console.error("Firebase 初始化或认证失败，数据库功能已禁用:", error);
             }
         }
         authenticate();
 
 
         // ----------------------------------------------------------------------
-        // 2. 单词数据 (300个简单英文单词和中文翻译，硬编码在代码中)
+        // 2. 单词数据
         // ----------------------------------------------------------------------
         const ALL_WORDS = [
             { en: "apple", cn: "苹果" }, { en: "banana", cn: "香蕉" }, { en: "cat", cn: "猫" }, { en: "dog", cn: "狗" },
@@ -143,7 +160,7 @@
             { en: "wait", cn: "等待" }, { en: "bring", cn: "带来" }, { en: "send", cn: "发送" }, { en: "call", cn: "呼叫" },
             { en: "clean", cn: "打扫" }, { en: "wash", cn: "清洗" }, { en: "cook", cn: "烹饪" }, { en: "cut", cn: "切割" },
             { en: "try", cn: "尝试" }, { en: "ask", cn: "询问" }, { en: "answer", cn: "回答" }, { en: "look", cn: "看" },
-            { en: "move", cn: "移动" }, { en: "push", cn: "推" }, { en: "拉" }, { en: "sit", cn: "坐" },
+            { en: "move", cn: "移动" }, { en: "push", cn: "推" }, { en: "pull", cn: "拉" }, { en: "sit", cn: "坐" },
             { en: "stand", cn: "站" }, { en: "show", cn: "展示" }, { en: "tell", cn: "告诉" }, { en: "mean", cn: "意指" },
             { en: "pay", cn: "支付" }, { en: "win", cn: "赢" }, { en: "miss", cn: "错过" }, { en: "turn", cn: "转弯" },
             { en: "follow", cn: "跟随" }, { en: "change", cn: "改变" }, { en: "build", cn: "建造" }, { en: "hold", cn: "抓住" },
@@ -211,11 +228,13 @@
         let availableWords = [...ALL_WORDS]; // 拷贝一份用于抽取
         let currentWord = null;
         let wordsCompleted = 0;
+        let isFirstLoad = true; // 新增：跟踪是否是应用初始加载，用于控制首次语音播放
 
         /**
-         * 随机选取下一个未重复的单词。
+         * 随机选取下一个未重复的单词，并更新UI。
          */
         function loadNextWord() {
+            // console.log("--- loadNextWord executed ---");
             if (availableWords.length === 0) {
                 // 所有单词已学完
                 englishWordEl.textContent = "恭喜您！";
@@ -223,6 +242,7 @@
                 listenBtn.disabled = true;
                 nextBtn.disabled = true;
                 nextBtn.textContent = "已完成";
+                // console.log("All words completed.");
                 return;
             }
 
@@ -233,7 +253,7 @@
             currentWord = availableWords.splice(randomIndex, 1)[0];
             wordsCompleted = ALL_WORDS.length - availableWords.length;
 
-            // 3. 更新UI显示
+            // 3. 强制更新UI显示
             englishWordEl.textContent = currentWord.en;
             chineseTranslationEl.textContent = currentWord.cn;
             progressTextEl.textContent = `进度: ${wordsCompleted}/${ALL_WORDS.length}`;
@@ -242,8 +262,14 @@
             listenBtn.disabled = false;
             nextBtn.disabled = false;
 
-            // 4. 自动播放单词和翻译 (新增)
-            speakCurrentWord();
+            // 4. 自动播放单词和翻译 (仅在用户已交互后自动播放)
+            if (isFirstLoad) {
+                // 首次加载时，只更新UI，不自动播放语音，确保用户首次交互
+                isFirstLoad = false;
+            } else {
+                // 用户点击“下一个”时，自动播放
+                speakCurrentWord();
+            }
         }
 
 
@@ -251,7 +277,10 @@
          * 使用浏览器内置的SpeechSynthesis API播放单词和翻译。
          */
         function speakCurrentWord() {
-            if (!currentWord || window.speechSynthesis.speaking) return;
+            if (!currentWord || !('speechSynthesis' in window)) return;
+
+            // 立即取消任何正在进行的语音，避免冲突
+            window.speechSynthesis.cancel(); 
 
             // 1. 播放英文单词 (使用英文语音)
             const enUtterance = new SpeechSynthesisUtterance(currentWord.en);
@@ -266,7 +295,24 @@
                 window.speechSynthesis.speak(cnUtterance);
             };
 
+            // 3. 英文语音播放失败时的处理
+            enUtterance.onerror = (event) => {
+                console.error("英文语音播放失败:", event.error);
+                // 尝试直接播放中文翻译作为后备
+                if (event.error === 'not-allowed') {
+                    // 当出现 not-allowed 错误时，不尝试播放中文，因为通常会再次失败
+                    console.error("自动播放被浏览器阻止。请确保您已点击屏幕进行交互。");
+                } else {
+                    // 对于其他错误，尝试播放中文
+                    const cnUtterance = new SpeechSynthesisUtterance(currentWord.cn);
+                    cnUtterance.lang = 'zh-CN'; 
+                    cnUtterance.rate = 0.8; 
+                    window.speechSynthesis.speak(cnUtterance);
+                }
+            };
+
             window.speechSynthesis.speak(enUtterance);
+            // console.log(`Attempting to speak: ${currentWord.en} / ${currentWord.cn}`);
         }
 
         // ----------------------------------------------------------------------
@@ -282,13 +328,14 @@
         window.onload = function() {
             // 确保TTS服务可用
             if ('speechSynthesis' in window) {
-                // 首次加载第一个单词。loadNextWord内部已包含自动播放逻辑。
+                // 首次加载第一个单词。loadNextWord内部将通过 isFirstLoad 标志阻止自动播放。
                 loadNextWord();
             } else {
                 englishWordEl.textContent = "抱歉！";
                 chineseTranslationEl.textContent = "您的浏览器不支持语音播放功能。";
                 listenBtn.disabled = true;
                 nextBtn.disabled = true;
+                // console.error("Speech Synthesis not supported in this browser.");
             }
         };
 
