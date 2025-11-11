@@ -39,40 +39,44 @@
         }
     </style>
 </head>
-<body class="bg-blue-50"> <!-- 全局使用非常浅的浅蓝色底 --><div id="app-container" class="p-4 flex flex-col items-center justify-center">
+<body class="bg-blue-50"> <!-- 全局使用非常浅的浅蓝色底 -->
+    <div id="app-container" class="p-4 flex flex-col items-center justify-center">
 
         <!-- 顶部标题 --><h1 class="text-4xl font-bold text-gray-700 mb-8 mt-4">乐学英语</h1>
 
-        <!-- 英文单词显示区 (浅蓝色框) - 高度已缩短 --><div id="english-word-box" class="w-full bg-blue-500 rounded-2xl p-6 mb-6 shadow-xl flex items-center justify-center" style="min-height: 150px;">
+        <!-- 英文单词显示区 (浅蓝色框) --><div id="english-word-box" class="w-full bg-blue-500 rounded-2xl p-6 mb-6 shadow-xl flex items-center justify-center" style="min-height: 150px;">
             <p id="english-word" class="text-white text-6xl font-extrabold text-center select-none">Welcome</p>
         </div>
 
-        <!-- 中文翻译显示区 - 字体和边距已缩短 --><div class="w-full p-4 mb-8">
+        <!-- 中文翻译显示区 --><div class="w-full p-4 mb-8">
             <p id="chinese-translation" class="text-gray-800 text-4xl font-semibold text-center select-none">欢迎</p>
         </div>
 
-        <!-- “听” 按钮 (圆形红底) - 尺寸和边距已缩短 --><button id="listen-btn" class="listen-button bg-red-500 hover:bg-red-600 text-white rounded-full flex flex-col items-center justify-center cursor-pointer mb-8">
-            <!-- 喇叭Icon (Inline SVG) - 尺寸已缩短 --><svg class="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <!-- “听” 按钮 (圆形红底) --><button id="listen-btn" class="listen-button bg-red-500 hover:bg-red-600 text-white rounded-full flex flex-col items-center justify-center cursor-pointer mb-8">
+            <!-- 喇叭Icon (Inline SVG) --><svg class="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 10v4c0 .55.45 1 1 1h3l4 4V6l-4 4H4c-.55 0-1 .45-1 1zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.98 7-4.66 7-8.77s-2.99-7.79-7-8.77z"/>
             </svg>
             <span class="text-3xl font-bold">听</span>
         </button>
 
-        <!-- “下一个” 按钮 (绿色长方形) - 内边距已缩短 --><button id="next-btn" class="next-button bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-16 rounded-xl text-4xl w-full max-w-sm cursor-pointer">
+        <!-- “下一个” 按钮 (绿色长方形) --><button id="next-btn" class="next-button bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-16 rounded-xl text-4xl w-full max-w-sm cursor-pointer">
             下一个
         </button>
 
         <p id="progress-text" class="text-lg text-gray-500 mt-6 select-none">进度: 0/300</p>
     </div>
 
-    <script type="module">
-        // ----------------------------------------------------------------------
-        // 1. Firebase 初始化 - 已修改以处理配置缺失的错误
-        // ----------------------------------------------------------------------
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- 1. 引入 Firebase SDK - 切换到非模块化 (compat) 模式，使用全局变量，以提高网络兼容性 -->
+    <!-- 必须在主脚本之前加载 -->
+    <script src="https://cdn.jsdelivr.net/npm/firebase@11.6.1/firebase-app-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@11.6.1/firebase-firestore-compat.js"></script>
 
+    <script>
+        // ----------------------------------------------------------------------
+        // 1. Firebase 初始化 (使用全局命名空间 'firebase' 和 'app')
+        // ----------------------------------------------------------------------
+        
         // 全局变量定义
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
@@ -83,47 +87,47 @@
         let db = null;
         let auth = null;
 
-        /**
-         * 异步初始化 Firebase 和认证，并捕获初始化错误。
-         * 如果配置不完整，则跳过初始化，允许主应用运行。
-         */
         async function authenticate() {
+            // 确保 Firebase 已通过 <script> 标签加载，并且 'firebase' 全局对象存在
+            if (typeof firebase === 'undefined' || typeof firebase.initializeApp === 'undefined') {
+                // console.error("Firebase global object is not available. CDN load failed.");
+                return;
+            }
+
             try {
-                // 检查 firebaseConfig 是否包含 projectId，这是导致错误的直接原因
+                // 如果没有提供 Firebase 配置，则跳过初始化
                 if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
-                    console.warn("Firebase配置不完整（缺少 projectId）。已跳过数据库初始化，但游戏核心功能不受影响。");
                     return; 
                 }
                 
-                // 尝试初始化 Firebase 服务
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+                // 使用 compat API 初始化
+                app = firebase.initializeApp(firebaseConfig);
+                auth = app.auth(); // 获取 auth 实例 (Compat API)
+                db = app.firestore(); // 获取 firestore 实例 (Compat API)
 
-                // 认证逻辑
                 if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
+                    await auth.signInWithCustomToken(initialAuthToken);
                 } else {
-                    await signInAnonymously(auth);
+                    await auth.signInAnonymously();
                 }
-                // console.log("Firebase authentication successful.");
             } catch (error) {
-                // 捕获任何初始化或认证失败的错误，并防止应用崩溃
-                console.error("Firebase 初始化或认证失败，数据库功能已禁用:", error);
+                // 如果 Firebase 认证失败，静默处理
+                // console.error("Firebase authentication failed:", error);
             }
         }
+        // 异步执行认证
         authenticate();
 
 
         // ----------------------------------------------------------------------
-        // 2. 单词数据
+        // 2. 单词数据 (保持不变)
         // ----------------------------------------------------------------------
         const ALL_WORDS = [
             { en: "apple", cn: "苹果" }, { en: "banana", cn: "香蕉" }, { en: "cat", cn: "猫" }, { en: "dog", cn: "狗" },
             { en: "house", cn: "房子" }, { en: "car", cn: "汽车" }, { en: "book", cn: "书" }, { en: "pen", cn: "钢笔" },
             { en: "table", cn: "桌子" }, { en: "chair", cn: "椅子" }, { en: "door", cn: "门" }, { en: "window", cn: "窗户" },
             { en: "street", cn: "街道" }, { en: "tree", cn: "树" }, { en: "flower", cn: "花" }, { en: "water", cn: "水" },
-            { en: "fire", cn: "火" }, { en: "sun", cn: "太阳" }, { en: "moon", cn: "月亮" }, { en: "star", cn: "星星" },
+            { en: "fire", cn: "火" }, { en: "sun", cn: "太阳" }, { en: "月亮", cn: "月亮" }, { en: "star", cn: "星星" },
             { en: "sky", cn: "天空" }, { en: "cloud", cn: "云" }, { en: "rain", cn: "雨" }, { en: "snow", cn: "雪" },
             { en: "time", cn: "时间" }, { en: "day", cn: "白天" }, { en: "night", cn: "夜晚" }, { en: "morning", cn: "早上" },
             { en: "afternoon", cn: "下午" }, { en: "family", cn: "家庭" }, { en: "friend", cn: "朋友" }, { en: "parent", cn: "父母" },
@@ -225,49 +229,62 @@
         const nextBtn = document.getElementById('next-btn');
         const progressTextEl = document.getElementById('progress-text');
 
-        let availableWords = [...ALL_WORDS]; // 拷贝一份用于抽取
+        let availableWords = [...ALL_WORDS]; 
         let currentWord = null;
         let wordsCompleted = 0;
-        let isFirstLoad = true; // 新增：跟踪是否是应用初始加载，用于控制首次语音播放
+        
+        // 用于存储选定的语音对象
+        let enVoice = null;
+        let cnVoice = null;
 
         /**
-         * 随机选取下一个未重复的单词，并更新UI。
+         * 尝试获取可用的中英语音。简化了语音筛选条件。
          */
-        function loadNextWord() {
-            // console.log("--- loadNextWord executed ---");
+        function setVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            // 简化筛选：只要语言匹配即可
+            enVoice = voices.find(voice => voice.lang.startsWith('en-'));
+            cnVoice = voices.find(voice => voice.lang.startsWith('zh-'));
+        }
+        
+        // 注册 onvoiceschanged 事件，确保语音加载完成后能更新 enVoice/cnVoice
+        if ('speechSynthesis' in window) {
+            // 首次尝试设置语音
+            setVoices(); 
+            // 语音加载完成后，再次调用 setVoices
+            window.speechSynthesis.onvoiceschanged = setVoices;
+        }
+
+
+        /**
+         * 随机选取下一个未重复的单词，更新UI，并根据参数决定是否自动播放。
+         * @param {boolean} autoSpeak - 是否在加载后自动播放语音
+         */
+        function getAndDisplayNewWord(autoSpeak = true) {
             if (availableWords.length === 0) {
-                // 所有单词已学完
+                // 单词学完的逻辑
                 englishWordEl.textContent = "恭喜您！";
                 chineseTranslationEl.textContent = "您已完成所有300个单词的学习。";
                 listenBtn.disabled = true;
                 nextBtn.disabled = true;
                 nextBtn.textContent = "已完成";
-                // console.log("All words completed.");
                 return;
             }
 
-            // 1. 随机选取一个索引
             const randomIndex = Math.floor(Math.random() * availableWords.length);
-
-            // 2. 取出单词并从可用列表中移除（确保不重复）
-            currentWord = availableWords.splice(randomIndex, 1)[0];
+            // 从数组中取出并移除一个单词
+            currentWord = availableWords.splice(randomIndex, 1)[0]; 
             wordsCompleted = ALL_WORDS.length - availableWords.length;
 
-            // 3. 强制更新UI显示
+            // 更新UI
             englishWordEl.textContent = currentWord.en;
             chineseTranslationEl.textContent = currentWord.cn;
             progressTextEl.textContent = `进度: ${wordsCompleted}/${ALL_WORDS.length}`;
             
-            // 确保按钮可用
             listenBtn.disabled = false;
             nextBtn.disabled = false;
 
-            // 4. 自动播放单词和翻译 (仅在用户已交互后自动播放)
-            if (isFirstLoad) {
-                // 首次加载时，只更新UI，不自动播放语音，确保用户首次交互
-                isFirstLoad = false;
-            } else {
-                // 用户点击“下一个”时，自动播放
+            if (autoSpeak) {
                 speakCurrentWord();
             }
         }
@@ -277,42 +294,46 @@
          * 使用浏览器内置的SpeechSynthesis API播放单词和翻译。
          */
         function speakCurrentWord() {
-            if (!currentWord || !('speechSynthesis' in window)) return;
+            if (!currentWord || !('speechSynthesis' in window)) {
+                return;
+            }
 
-            // 立即取消任何正在进行的语音，避免冲突
+            // 在播放前，再次尝试检查并设置语音，提高鲁棒性
+            if (!enVoice || !cnVoice) {
+                setVoices();
+            }
+
+            // 立即取消任何正在进行的语音
             window.speechSynthesis.cancel(); 
-
-            // 1. 播放英文单词 (使用英文语音)
+            
+            // 1. 播放英文单词
             const enUtterance = new SpeechSynthesisUtterance(currentWord.en);
-            enUtterance.lang = 'en-US'; // 设置英文语言代码
-            enUtterance.rate = 0.8; // 稍慢的语速，更清晰
+            enUtterance.lang = 'en-US'; 
+            enUtterance.rate = 0.8; 
+            if (enVoice) {
+                // 仅在找到语音对象时才设置 voice 属性
+                enUtterance.voice = enVoice; 
+            }
+            // 如果 enVoice 为 null，则仅依靠 en-US lang 属性让浏览器播放默认音
 
-            // 2. 播放中文翻译 (在英文播放结束后，使用中文语音)
+            // 2. 播放中文翻译
+            const cnUtterance = new SpeechSynthesisUtterance(currentWord.cn);
+            cnUtterance.lang = 'zh-CN'; 
+            cnUtterance.rate = 0.8;
+            if (cnVoice) {
+                // 仅在找到语音对象时才设置 voice 属性
+                cnUtterance.voice = cnVoice; 
+            }
+            // 如果 cnVoice 为 null，则仅依靠 zh-CN lang 属性让浏览器播放默认音
+            
+            // 设置英文播放结束后播放中文
             enUtterance.onend = () => {
-                const cnUtterance = new SpeechSynthesisUtterance(currentWord.cn);
-                cnUtterance.lang = 'zh-CN'; // 设置中文语言代码
-                cnUtterance.rate = 0.8; // 稍慢的语速
+                // 确保英文播放结束才播放中文，保持语音链的稳定性
                 window.speechSynthesis.speak(cnUtterance);
             };
 
-            // 3. 英文语音播放失败时的处理
-            enUtterance.onerror = (event) => {
-                console.error("英文语音播放失败:", event.error);
-                // 尝试直接播放中文翻译作为后备
-                if (event.error === 'not-allowed') {
-                    // 当出现 not-allowed 错误时，不尝试播放中文，因为通常会再次失败
-                    console.error("自动播放被浏览器阻止。请确保您已点击屏幕进行交互。");
-                } else {
-                    // 对于其他错误，尝试播放中文
-                    const cnUtterance = new SpeechSynthesisUtterance(currentWord.cn);
-                    cnUtterance.lang = 'zh-CN'; 
-                    cnUtterance.rate = 0.8; 
-                    window.speechSynthesis.speak(cnUtterance);
-                }
-            };
-
+            // 3. 开始播放英文
             window.speechSynthesis.speak(enUtterance);
-            // console.log(`Attempting to speak: ${currentWord.en} / ${currentWord.cn}`);
         }
 
         // ----------------------------------------------------------------------
@@ -320,22 +341,22 @@
         // ----------------------------------------------------------------------
 
         listenBtn.addEventListener('click', speakCurrentWord);
-        nextBtn.addEventListener('click', loadNextWord);
+        // 点击“下一个”按钮，加载新单词并自动播放 (autoSpeak = true)
+        nextBtn.addEventListener('click', () => getAndDisplayNewWord(true)); 
 
         // ----------------------------------------------------------------------
         // 5. 初始启动
         // ----------------------------------------------------------------------
         window.onload = function() {
-            // 确保TTS服务可用
             if ('speechSynthesis' in window) {
-                // 首次加载第一个单词。loadNextWord内部将通过 isFirstLoad 标志阻止自动播放。
-                loadNextWord();
+                // 页面加载后，立即加载并显示第一个单词 (不自动播放语音)
+                getAndDisplayNewWord(false);
             } else {
+                // 浏览器不支持语音功能的提醒
                 englishWordEl.textContent = "抱歉！";
                 chineseTranslationEl.textContent = "您的浏览器不支持语音播放功能。";
                 listenBtn.disabled = true;
                 nextBtn.disabled = true;
-                // console.error("Speech Synthesis not supported in this browser.");
             }
         };
 
