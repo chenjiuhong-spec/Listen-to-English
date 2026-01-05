@@ -216,7 +216,7 @@
             const voices = window.speechSynthesis.getVoices();
             
             // 英文音色首选列表
-            const preferredEnVoices = ['Laura'];
+            const preferredEnVoices = [''];
             
             // 尝试在系统中寻找首选英文音色
             enVoice = voices.find(v => v.lang.startsWith('en-') && preferredEnVoices.some(name => v.name.includes(name)));
@@ -229,10 +229,10 @@
             cnVoice = voices.find(v => v.lang.startsWith('zh-'));
         }
         
-        if ('speechSynthesis' in window) {
-            setVoices(); 
-            window.speechSynthesis.onvoiceschanged = setVoices;
-        }
+//        if ('speechSynthesis' in window) {
+//            setVoices(); 
+//            window.speechSynthesis.onvoiceschanged = setVoices;
+//        }
 
         function getAndDisplayNewWord(autoSpeak = true) {
             if (availableWords.length === 0) {
@@ -293,5 +293,6 @@
     </script>
 </body>
 </html>
+
 
 
