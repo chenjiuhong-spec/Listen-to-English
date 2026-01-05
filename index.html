@@ -222,9 +222,9 @@
             enVoice = voices.find(v => v.lang.startsWith('en-') && preferredEnVoices.some(name => v.name.includes(name)));
             
             // 如果没找到首选音色，回退到任何英文音色
-            if (!enVoice) {
-                enVoice = voices.find(v => v.lang.startsWith('en-'));
-            }
+   //         if (!enVoice) {
+   //             enVoice = voices.find(v => v.lang.startsWith('en-'));
+   //         }
             
             cnVoice = voices.find(v => v.lang.startsWith('zh-'));
         }
@@ -293,3 +293,4 @@
     </script>
 </body>
 </html>
+
