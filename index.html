@@ -216,7 +216,7 @@
             const voices = window.speechSynthesis.getVoices();
             
             // 英文音色首选列表
-            const preferredEnVoices = ['Laura', 'Ruby', 'Moli'];
+            const preferredEnVoices = ['Laura'];
             
             // 尝试在系统中寻找首选英文音色
             enVoice = voices.find(v => v.lang.startsWith('en-') && preferredEnVoices.some(name => v.name.includes(name)));
@@ -293,4 +293,5 @@
     </script>
 </body>
 </html>
+
 
