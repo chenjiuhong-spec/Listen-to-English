@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>乐学英语 - 简单单词</title>
-    <!-- 引入 Tailwind CSS CDN --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 强制字体为 Inter，并确保中文字体清晰 */
         body {
@@ -42,92 +43,75 @@
 <body class="bg-blue-50"> <!-- 全局使用非常浅的浅蓝色底 -->
     <div id="app-container" class="p-4 flex flex-col items-center justify-center">
 
-        <!-- 顶部标题 --><h1 class="text-4xl font-bold text-gray-700 mb-8 mt-4">乐学英语</h1>
+        <!-- 顶部标题 -->
+        <h1 class="text-4xl font-bold text-gray-700 mb-8 mt-4">乐学英语</h1>
 
-        <!-- 英文单词显示区 (浅蓝色框) --><div id="english-word-box" class="w-full bg-blue-500 rounded-2xl p-6 mb-6 shadow-xl flex items-center justify-center" style="min-height: 150px;">
+        <!-- 英文单词显示区 (浅蓝色框) -->
+        <div id="english-word-box" class="w-full bg-blue-500 rounded-2xl p-6 mb-6 shadow-xl flex items-center justify-center" style="min-height: 150px;">
             <p id="english-word" class="text-white text-6xl font-extrabold text-center select-none">Welcome</p>
         </div>
 
-        <!-- 中文翻译显示区 --><div class="w-full p-4 mb-8">
+        <!-- 中文翻译显示区 -->
+        <div class="w-full p-4 mb-8">
             <p id="chinese-translation" class="text-gray-800 text-4xl font-semibold text-center select-none">欢迎</p>
         </div>
 
-        <!-- “听” 按钮 (圆形红底) --><button id="listen-btn" class="listen-button bg-red-500 hover:bg-red-600 text-white rounded-full flex flex-col items-center justify-center cursor-pointer mb-8">
-            <!-- 喇叭Icon (Inline SVG) --><svg class="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <!-- “听” 按钮 (圆形红底) -->
+        <button id="listen-btn" class="listen-button bg-red-500 hover:bg-red-600 text-white rounded-full flex flex-col items-center justify-center cursor-pointer mb-8">
+            <!-- 喇叭Icon (Inline SVG) -->
+            <svg class="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 10v4c0 .55.45 1 1 1h3l4 4V6l-4 4H4c-.55 0-1 .45-1 1zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.98 7-4.66 7-8.77s-2.99-7.79-7-8.77z"/>
             </svg>
             <span class="text-3xl font-bold">听</span>
         </button>
 
-        <!-- “下一个” 按钮 (绿色长方形) --><button id="next-btn" class="next-button bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-16 rounded-xl text-4xl w-full max-w-sm cursor-pointer">
+        <!-- “下一个” 按钮 (绿色长方形) -->
+        <button id="next-btn" class="next-button bg-green-400 hover:bg-green-500 text-white font-bold py-4 px-16 rounded-xl text-4xl w-full max-w-sm cursor-pointer">
             下一个
         </button>
 
         <p id="progress-text" class="text-lg text-gray-500 mt-6 select-none">进度: 0/300</p>
     </div>
 
-    <!-- 1. 引入 Firebase SDK - 切换到非模块化 (compat) 模式，使用全局变量，以提高网络兼容性 -->
-    <!-- 必须在主脚本之前加载 -->
-    <script src="https://cdn.jsdelivr.net/npm/firebase@11.6.1/firebase-app-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/firebase@11.6.1/firebase-auth-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/firebase@11.6.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
 
     <script>
         // ----------------------------------------------------------------------
-        // 1. Firebase 初始化 (使用全局命名空间 'firebase' 和 'app')
+        // 1. Firebase 初始化
         // ----------------------------------------------------------------------
-        
-        // 全局变量定义
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // 延迟初始化 app, db, auth
-        let app = null;
         let db = null;
         let auth = null;
 
-        async function authenticate() {
-            // 确保 Firebase 已通过 <script> 标签加载，并且 'firebase' 全局对象存在
-            if (typeof firebase === 'undefined' || typeof firebase.initializeApp === 'undefined') {
-                // console.error("Firebase global object is not available. CDN load failed.");
-                return;
-            }
+        async function initFirebase() {
+            if (!firebaseConfig) return;
+            const app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
 
-            try {
-                // 如果没有提供 Firebase 配置，则跳过初始化
-                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
-                    return; 
-                }
-                
-                // 使用 compat API 初始化
-                app = firebase.initializeApp(firebaseConfig);
-                auth = app.auth(); // 获取 auth 实例 (Compat API)
-                db = app.firestore(); // 获取 firestore 实例 (Compat API)
-
-                if (initialAuthToken) {
-                    await auth.signInWithCustomToken(initialAuthToken);
-                } else {
-                    await auth.signInAnonymously();
-                }
-            } catch (error) {
-                // 如果 Firebase 认证失败，静默处理
-                // console.error("Firebase authentication failed:", error);
+            if (initialAuthToken) {
+                await auth.signInWithCustomToken(initialAuthToken);
+            } else {
+                await auth.signInAnonymously();
             }
         }
-        // 异步执行认证
-        authenticate();
-
+        initFirebase();
 
         // ----------------------------------------------------------------------
-        // 2. 单词数据 (保持不变)
+        // 2. 单词数据
         // ----------------------------------------------------------------------
         const ALL_WORDS = [
             { en: "apple", cn: "苹果" }, { en: "banana", cn: "香蕉" }, { en: "cat", cn: "猫" }, { en: "dog", cn: "狗" },
             { en: "house", cn: "房子" }, { en: "car", cn: "汽车" }, { en: "book", cn: "书" }, { en: "pen", cn: "钢笔" },
             { en: "table", cn: "桌子" }, { en: "chair", cn: "椅子" }, { en: "door", cn: "门" }, { en: "window", cn: "窗户" },
             { en: "street", cn: "街道" }, { en: "tree", cn: "树" }, { en: "flower", cn: "花" }, { en: "water", cn: "水" },
-            { en: "fire", cn: "火" }, { en: "sun", cn: "太阳" }, { en: "月亮", cn: "月亮" }, { en: "star", cn: "星星" },
+            { en: "fire", cn: "火" }, { en: "sun", cn: "太阳" }, { en: "moon", cn: "月亮" }, { en: "star", cn: "星星" },
             { en: "sky", cn: "天空" }, { en: "cloud", cn: "云" }, { en: "rain", cn: "雨" }, { en: "snow", cn: "雪" },
             { en: "time", cn: "时间" }, { en: "day", cn: "白天" }, { en: "night", cn: "夜晚" }, { en: "morning", cn: "早上" },
             { en: "afternoon", cn: "下午" }, { en: "family", cn: "家庭" }, { en: "friend", cn: "朋友" }, { en: "parent", cn: "父母" },
@@ -149,8 +133,6 @@
             { en: "wall", cn: "墙" }, { en: "ground", cn: "地面" }, { en: "air", cn: "空气" }, { en: "gas", cn: "气体" },
             { en: "oil", cn: "油" }, { en: "farm", cn: "农场" }, { en: "park", cn: "公园" }, { en: "ocean", cn: "海洋" },
             { en: "river", cn: "河流" }, { en: "lake", cn: "湖泊" }, { en: "boat", cn: "船" }, { en: "bike", cn: "自行车" },
-
-            // Verbs
             { en: "go", cn: "去" }, { en: "come", cn: "来" }, { en: "see", cn: "看" }, { en: "hear", cn: "听" },
             { en: "walk", cn: "走路" }, { en: "run", cn: "跑步" }, { en: "talk", cn: "说话" }, { en: "say", cn: "说" },
             { en: "make", cn: "制造" }, { en: "do", cn: "做" }, { en: "have", cn: "有" }, { en: "get", cn: "得到" },
@@ -171,40 +153,37 @@
             { en: "listen", cn: "聆听" }, { en: "watch", cn: "观看" }, { en: "rest", cn: "休息" }, { en: "save", cn: "保存" },
             { en: "spend", cn: "花费" }, { en: "use", cn: "使用" }, { en: "wear", cn: "穿戴" }, { en: "meet", cn: "会面" },
             { en: "happen", cn: "发生" }, { en: "continue", cn: "继续" }, { en: "choose", cn: "选择" }, { en: "agree", cn: "同意" },
-            { en: "believe", cn: "相信" }, { en: "finish", cn: "完成" }, { en: "travel", cn: "旅行" }, { en: "wait", cn: "等待" },
-            { en: "teach", cn: "教" }, { en: "learn", cn: "学习" }, { en: "start", cn: "开始" }, { en: "finish", cn: "完成" },
-            { en: "smile", cn: "微笑" }, { en: "cry", cn: "哭泣" }, { en: "dream", cn: "梦想" }, { en: "hope", cn: "希望" },
-            { en: "enter", cn: "进入" }, { en: "exit", cn: "退出" }, { en: "return", cn: "返回" }, { en: "drive", cn: "驾驶" },
-            { en: "fly", cn: "飞" }, { en: "jump", cn: "跳" }, { en: "throw", cn: "投掷" }, { en: "catch", cn: "抓住" },
-            { en: "forget", cn: "忘记" }, { en: "remember", cn: "记住" }, { en: "introduce", cn: "介绍" }, { en: "invite", cn: "邀请" },
-
-            // Adjectives, Adverbs, Pronouns, Numbers, etc.
-            { en: "good", cn: "好的" }, { en: "bad", cn: "坏的" }, { en: "big", cn: "大的" }, { en: "small", cn: "小的" },
-            { en: "new", cn: "新的" }, { en: "old", cn: "旧的" }, { en: "hot", cn: "热的" }, { en: "cold", cn: "冷的" },
-            { en: "happy", cn: "开心的" }, { en: "sad", cn: "悲伤的" }, { en: "long", cn: "长的" }, { en: "short", cn: "短的" },
-            { en: "fast", cn: "快的" }, { en: "slow", cn: "慢的" }, { en: "high", cn: "高的" }, { en: "low", cn: "低的" },
-            { en: "easy", cn: "容易的" }, { en: "hard", cn: "困难的" }, { en: "right", cn: "正确的" }, { en: "wrong", cn: "错误的" },
-            { en: "up", cn: "向上" }, { en: "down", cn: "向下" }, { en: "in", cn: "在内" }, { en: "out", cn: "在外" },
-            { en: "on", cn: "在...上" }, { en: "off", cn: "关闭" }, { en: "under", cn: "在...下" }, { en: "over", cn: "在...上空" },
-            { en: "next", cn: "下一个" }, { en: "near", cn: "近的" }, { en: "far", cn: "远的" }, { en: "before", cn: "在...之前" },
-            { en: "after", cn: "在...之后" }, { en: "with", cn: "和...一起" }, { en: "without", cn: "没有" }, { en: "from", cn: "从" },
-            { en: "to", cn: "到" }, { en: "at", cn: "在" }, { en: "for", cn: "为了" }, { en: "of", cn: "...的" },
-            { en: "this", cn: "这个" }, { en: "that", cn: "那个" }, { en: "these", cn: "这些" }, { en: "those", cn: "那些" },
-            { en: "I", cn: "我" }, { en: "you", cn: "你/你们" }, { en: "he", cn: "他" }, { en: "she", cn: "她" },
-            { en: "it", cn: "它" }, { en: "we", cn: "我们" }, { en: "they", cn: "他们/她们" }, { en: "my", cn: "我的" },
-            { en: "your", cn: "你的/你们的" }, { en: "his", cn: "他的" }, { en: "her", cn: "她的" }, { en: "our", cn: "我们的" },
-            { en: "their", cn: "他们的" }, { en: "now", cn: "现在" }, { en: "then", cn: "那时" }, { en: "always", cn: "总是" },
-            { en: "never", cn: "从不" }, { en: "often", cn: "经常" }, { en: "seldom", cn: "很少" }, { en: "today", cn: "今天" },
-            { en: "yesterday", cn: "昨天" }, { en: "tomorrow", cn: "明天" }, { en: "much", cn: "很多" }, { en: "many", cn: "许多" },
-            { en: "few", cn: "很少的" }, { en: "some", cn: "一些" }, { en: "all", cn: "全部" }, { en: "only", cn: "只有" },
-            { en: "also", cn: "也" }, { en: "well", cn: "好地" }, { en: "badly", cn: "差地" }, { en: "sure", cn: "确定的" },
-            { en: "real", cn: "真实的" }, { en: "true", cn: "真的" }, { en: "false", cn: "假的" }, { en: "ready", cn: "准备好的" },
-            { en: "free", cn: "自由的" }, { en: "busy", cn: "忙碌的" }, { en: "fine", cn: "好的" }, { en: "sick", cn: "生病的" },
-            { en: "tired", cn: "疲倦的" }, { en: "strong", cn: "强壮的" }, { en: "weak", cn: "虚弱的" }, { en: "clean", cn: "干净的" },
-            { en: "dirty", cn: "脏的" }, { en: "empty", cn: "空的" }, { en: "full", cn: "满的" }, { en: "same", cn: "相同的" },
-            { en: "different", cn: "不同的" }, { en: "clear", cn: "清晰的" }, { en: "dark", cn: "黑暗的" }, { en: "soft", cn: "柔软的" },
-            { en: "loud", cn: "大声的" }, { en: "quiet", cn: "安静的" }, { en: "kind", cn: "善良的" }, { en: "mean", cn: "刻薄的" },
-            { en: "able", cn: "能够的" }, { en: "unable", cn: "不能够的" }, { en: "important", cn: "重要的" }, { en: "next", cn: "下一个" },
+            { en: "believe", cn: "相信" }, { en: "finish", cn: "完成" }, { en: "travel", cn: "旅行" }, { en: "teach", cn: "教" },
+            { en: "learn", cn: "学习" }, { en: "smile", cn: "微笑" }, { en: "cry", cn: "哭泣" }, { en: "dream", cn: "梦想" },
+            { en: "hope", cn: "希望" }, { en: "enter", cn: "进入" }, { en: "exit", cn: "退出" }, { en: "return", cn: "返回" },
+            { en: "drive", cn: "驾驶" }, { en: "fly", cn: "飞" }, { en: "jump", cn: "跳" }, { en: "throw", cn: "投掷" },
+            { en: "catch", cn: "抓住" }, { en: "forget", cn: "忘记" }, { en: "remember", cn: "记住" }, { en: "introduce", cn: "介绍" },
+            { en: "invite", cn: "邀请" }, { en: "good", cn: "好的" }, { en: "bad", cn: "坏的" }, { en: "big", cn: "大的" },
+            { en: "small", cn: "小的" }, { en: "new", cn: "新的" }, { en: "old", cn: "旧的" }, { en: "hot", cn: "热的" },
+            { en: "cold", cn: "冷的" }, { en: "happy", cn: "开心的" }, { en: "sad", cn: "悲伤的" }, { en: "long", cn: "长的" },
+            { en: "short", cn: "短的" }, { en: "fast", cn: "快的" }, { en: "slow", cn: "慢的" }, { en: "high", cn: "高的" },
+            { en: "low", cn: "低的" }, { en: "easy", cn: "容易的" }, { en: "hard", cn: "困难的" }, { en: "right", cn: "正确的" },
+            { en: "wrong", cn: "错误的" }, { en: "up", cn: "向上" }, { en: "down", cn: "向下" }, { en: "in", cn: "在内" },
+            { en: "out", cn: "在外" }, { en: "on", cn: "在...上" }, { en: "off", cn: "关闭" }, { en: "under", cn: "在...下" },
+            { en: "over", cn: "在...上空" }, { en: "next", cn: "下一个" }, { en: "near", cn: "近的" }, { en: "far", cn: "远的" },
+            { en: "before", cn: "在...之前" }, { en: "after", cn: "在...之后" }, { en: "with", cn: "和...一起" }, { en: "without", cn: "没有" },
+            { en: "from", cn: "从" }, { en: "to", cn: "到" }, { en: "at", cn: "在" }, { en: "for", cn: "为了" },
+            { en: "of", cn: "...的" }, { en: "this", cn: "这个" }, { en: "that", cn: "那个" }, { en: "these", cn: "这些" },
+            { en: "those", cn: "那些" }, { en: "I", cn: "我" }, { en: "you", cn: "你/你们" }, { en: "he", cn: "他" },
+            { en: "she", cn: "她" }, { en: "it", cn: "它" }, { en: "we", cn: "我们" }, { they: "they", cn: "他们" },
+            { en: "my", cn: "我的" }, { en: "your", cn: "你的" }, { en: "his", cn: "他的" }, { en: "her", cn: "她的" },
+            { en: "our", cn: "我们的" }, { en: "their", cn: "他们的" }, { en: "now", cn: "现在" }, { en: "then", cn: "那时" },
+            { en: "always", cn: "总是" }, { en: "never", cn: "从不" }, { en: "often", cn: "经常" }, { en: "seldom", cn: "很少" },
+            { en: "today", cn: "今天" }, { en: "yesterday", cn: "昨天" }, { en: "tomorrow", cn: "明天" }, { en: "much", cn: "很多" },
+            { en: "many", cn: "许多" }, { en: "few", cn: "很少的" }, { en: "some", cn: "一些" }, { en: "all", cn: "全部" },
+            { en: "only", cn: "只有" }, { en: "also", cn: "也" }, { en: "well", cn: "好地" }, { en: "badly", cn: "差地" },
+            { en: "sure", cn: "确定的" }, { en: "real", cn: "真实的" }, { en: "true", cn: "真的" }, { en: "false", cn: "假的" },
+            { en: "ready", cn: "准备好的" }, { en: "free", cn: "自由的" }, { en: "busy", cn: "忙碌的" }, { en: "fine", cn: "好的" },
+            { en: "sick", cn: "生病的" }, { en: "tired", cn: "疲倦的" }, { en: "strong", cn: "强壮的" }, { en: "weak", cn: "虚弱的" },
+            { en: "clean", cn: "干净的" }, { en: "dirty", cn: "脏的" }, { en: "empty", cn: "空的" }, { en: "full", cn: "满的" },
+            { en: "same", cn: "相同的" }, { en: "different", cn: "不同的" }, { en: "clear", cn: "清晰的" }, { en: "dark", cn: "黑暗的" },
+            { en: "soft", cn: "柔软的" }, { en: "loud", cn: "大声的" }, { en: "quiet", cn: "安静的" }, { en: "kind", cn: "善良的" },
+            { en: "mean", cn: "刻薄的" }, { en: "able", cn: "能够的" }, { en: "unable", cn: "不能够的" }, { en: "important", cn: "重要的" },
             { en: "last", cn: "最后的" }, { en: "main", cn: "主要的" }, { en: "simple", cn: "简单的" }, { en: "whole", cn: "全部的" },
             { en: "great", cn: "伟大的" }, { en: "such", cn: "这样的" }, { en: "both", cn: "两者都" }, { en: "either", cn: "两者之一" },
             { en: "neither", cn: "两者都不" }, { en: "every", cn: "每一个" }, { en: "plus", cn: "加" }, { en: "minus", cn: "减" },
@@ -221,8 +200,6 @@
         // ----------------------------------------------------------------------
         // 3. 游戏核心逻辑
         // ----------------------------------------------------------------------
-
-        // DOM元素引用
         const englishWordEl = document.getElementById('english-word');
         const chineseTranslationEl = document.getElementById('chinese-translation');
         const listenBtn = document.getElementById('listen-btn');
@@ -232,37 +209,33 @@
         let availableWords = [...ALL_WORDS]; 
         let currentWord = null;
         let wordsCompleted = 0;
-        
-        // 用于存储选定的语音对象
         let enVoice = null;
         let cnVoice = null;
 
-        /**
-         * 尝试获取可用的中英语音。简化了语音筛选条件。
-         */
         function setVoices() {
             const voices = window.speechSynthesis.getVoices();
-            // 简化筛选：只要语言匹配即可
-            enVoice = voices.find(voice => voice.lang.startsWith('en-'));
-            cnVoice = voices.find(voice => voice.lang.startsWith('zh-'));
+            
+            // 英文音色首选列表
+            const preferredEnVoices = ['Laura', 'Ruby', 'Moli'];
+            
+            // 尝试在系统中寻找首选英文音色
+            enVoice = voices.find(v => v.lang.startsWith('en-') && preferredEnVoices.some(name => v.name.includes(name)));
+            
+            // 如果没找到首选音色，回退到任何英文音色
+            if (!enVoice) {
+                enVoice = voices.find(v => v.lang.startsWith('en-'));
+            }
+            
+            cnVoice = voices.find(v => v.lang.startsWith('zh-'));
         }
         
-        // 注册 onvoiceschanged 事件，确保语音加载完成后能更新 enVoice/cnVoice
         if ('speechSynthesis' in window) {
-            // 首次尝试设置语音
             setVoices(); 
-            // 语音加载完成后，再次调用 setVoices
             window.speechSynthesis.onvoiceschanged = setVoices;
         }
 
-
-        /**
-         * 随机选取下一个未重复的单词，更新UI，并根据参数决定是否自动播放。
-         * @param {boolean} autoSpeak - 是否在加载后自动播放语音
-         */
         function getAndDisplayNewWord(autoSpeak = true) {
             if (availableWords.length === 0) {
-                // 单词学完的逻辑
                 englishWordEl.textContent = "恭喜您！";
                 chineseTranslationEl.textContent = "您已完成所有300个单词的学习。";
                 listenBtn.disabled = true;
@@ -272,94 +245,51 @@
             }
 
             const randomIndex = Math.floor(Math.random() * availableWords.length);
-            // 从数组中取出并移除一个单词
             currentWord = availableWords.splice(randomIndex, 1)[0]; 
             wordsCompleted = ALL_WORDS.length - availableWords.length;
 
-            // 更新UI
             englishWordEl.textContent = currentWord.en;
             chineseTranslationEl.textContent = currentWord.cn;
             progressTextEl.textContent = `进度: ${wordsCompleted}/${ALL_WORDS.length}`;
             
-            listenBtn.disabled = false;
-            nextBtn.disabled = false;
-
-            if (autoSpeak) {
-                speakCurrentWord();
-            }
+            if (autoSpeak) speakCurrentWord();
         }
 
-
-        /**
-         * 使用浏览器内置的SpeechSynthesis API播放单词和翻译。
-         */
         function speakCurrentWord() {
-            if (!currentWord || !('speechSynthesis' in window)) {
-                return;
-            }
+            if (!currentWord || !('speechSynthesis' in window)) return;
 
-            // 在播放前，再次尝试检查并设置语音，提高鲁棒性
-            if (!enVoice || !cnVoice) {
-                setVoices();
-            }
-
-            // 立即取消任何正在进行的语音
             window.speechSynthesis.cancel(); 
             
-            // 1. 播放英文单词
             const enUtterance = new SpeechSynthesisUtterance(currentWord.en);
             enUtterance.lang = 'en-US'; 
             enUtterance.rate = 0.8; 
-            if (enVoice) {
-                // 仅在找到语音对象时才设置 voice 属性
-                enUtterance.voice = enVoice; 
-            }
-            // 如果 enVoice 为 null，则仅依靠 en-US lang 属性让浏览器播放默认音
+            if (enVoice) enUtterance.voice = enVoice;
 
-            // 2. 播放中文翻译
             const cnUtterance = new SpeechSynthesisUtterance(currentWord.cn);
             cnUtterance.lang = 'zh-CN'; 
             cnUtterance.rate = 0.8;
-            if (cnVoice) {
-                // 仅在找到语音对象时才设置 voice 属性
-                cnUtterance.voice = cnVoice; 
-            }
-            // 如果 cnVoice 为 null，则仅依靠 zh-CN lang 属性让浏览器播放默认音
+            if (cnVoice) cnUtterance.voice = cnVoice;
             
-            // 设置英文播放结束后播放中文
-            enUtterance.onend = () => {
-                // 确保英文播放结束才播放中文，保持语音链的稳定性
-                window.speechSynthesis.speak(cnUtterance);
-            };
-
-            // 3. 开始播放英文
+            enUtterance.onend = () => window.speechSynthesis.speak(cnUtterance);
             window.speechSynthesis.speak(enUtterance);
         }
 
         // ----------------------------------------------------------------------
         // 4. 事件监听器
         // ----------------------------------------------------------------------
-
         listenBtn.addEventListener('click', speakCurrentWord);
-        // 点击“下一个”按钮，加载新单词并自动播放 (autoSpeak = true)
         nextBtn.addEventListener('click', () => getAndDisplayNewWord(true)); 
 
-        // ----------------------------------------------------------------------
-        // 5. 初始启动
-        // ----------------------------------------------------------------------
         window.onload = function() {
             if ('speechSynthesis' in window) {
-                // 页面加载后，立即加载并显示第一个单词 (不自动播放语音)
                 getAndDisplayNewWord(false);
             } else {
-                // 浏览器不支持语音功能的提醒
                 englishWordEl.textContent = "抱歉！";
-                chineseTranslationEl.textContent = "您的浏览器不支持语音播放功能。";
+                chineseTranslationEl.textContent = "您的浏览器不支持语音功能。";
                 listenBtn.disabled = true;
                 nextBtn.disabled = true;
             }
         };
-
     </script>
 </body>
 </html>
