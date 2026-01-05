@@ -222,17 +222,17 @@
             enVoice = voices.find(v => v.lang.startsWith('en-') && preferredEnVoices.some(name => v.name.includes(name)));
             
             // 如果没找到首选音色，回退到任何英文音色
-   //         if (!enVoice) {
-   //             enVoice = voices.find(v => v.lang.startsWith('en-'));
-   //         }
+            if (!enVoice) {
+                enVoice = voices.find(v => v.lang.startsWith('en-'));
+            }
             
             cnVoice = voices.find(v => v.lang.startsWith('zh-'));
         }
         
-//        if ('speechSynthesis' in window) {
-//            setVoices(); 
-//            window.speechSynthesis.onvoiceschanged = setVoices;
-//        }
+        if ('speechSynthesis' in window) {
+            setVoices(); 
+            window.speechSynthesis.onvoiceschanged = setVoices;
+        }
 
         function getAndDisplayNewWord(autoSpeak = true) {
             if (availableWords.length === 0) {
@@ -293,6 +293,7 @@
     </script>
 </body>
 </html>
+
 
 
 
